@@ -29,7 +29,8 @@ jobs:
       - name: install-task
         run: |
           curl -1sLf 'https://dl.cloudsmith.io/public/task/task/setup.deb.sh' | sudo -E bash
-          apt install task
+          sudo apt update
+          sudo apt install -y task
           task --version
 
       - name: Cache Node modules
