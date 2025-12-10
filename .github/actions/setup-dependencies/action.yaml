@@ -5,21 +5,25 @@ inputs:
   install-node:
     description: "Should node be installed"
     required: false
+    default: "false"
   install-go:
     description: "Should go be installed"
     required: false
+    default: "false"
   install-python:
     description: "Should python be installed"
     required: false
+    default: "false"
   install-task:
     description: "Should task be installed"
     required: false
+    default: "false"
 
 runs:
   using: 'composite'
   steps:
     - name: setup-task
-      if: ${{inputs.install-task}} == true
+      if: ${{ inputs.install-task == 'true' }}
       shell: bash
       run: |
           curl -1sLf 'https://dl.cloudsmith.io/public/task/task/setup.deb.sh' | sudo -E bash
@@ -28,14 +32,33 @@ runs:
           task --version
           
     - name: setup-node
-      if: ${{inputs.install-node}} == true
+      if: ${{ inputs.install-node == 'true' }}
       uses: actions/setup-node@v6
       with:
         node-version: 24
 
     - name: setup-python
-      if: ${{inputs.install-python}} == true
-      uses: actions/setup-node@v6
+      if: ${{ inputs.install-python == 'true' }}
+      uses: actions/setup-python@v6
       with:
-        node-version: 24
-    
+        python-version: '3.11' 
+    - name: pipx-and-poetry
+      if: ${{ inputs.install-python == 'true' }}
+      shell: bash 
+      run: | 
+        sudo apt update
+        sudo apt install pipx -y
+        pipx ensurepath
+        
+        # 2. Add the pipx default install location to the environment variable file.
+        # This makes the change available for all subsequent steps.
+        echo "PATH=$PATH:/root/.local/bin" >> $GITHUB_ENV
+        
+        # 3. Install Poetry
+        pipx install poetry
+
+    - name: setup-go
+      if: ${{ inputs.install-go == 'true' }}
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.23'

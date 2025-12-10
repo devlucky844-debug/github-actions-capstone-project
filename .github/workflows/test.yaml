@@ -5,13 +5,34 @@ on:
   workflow_dispatch:
 
 jobs:
+  filter:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      services: ${{ steps.filter.outputs.changes }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: diff-check
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filters: .github/utils/file-filters.yaml
+
+
   test:
     runs-on: ubuntu-24.04
+    if: ${{ needs.filter.outputs.services != '[]' && needs.filter.outputs.services != '' }}
+    needs: ["filter"]
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - services/node/api-node
+        service: ${{ fromJson(needs.filter.outputs.services) }}
+
     defaults:
       run:
         shell: bash
@@ -24,23 +45,13 @@ jobs:
       - name: setup-dependencies
         uses: ./.github/actions/setup-dependencies
         with:
-          install-node: true
           install-task: true
-
-      - name: Cache Node modules
-        id: cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ matrix.service }}/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles(format('{0}/package-lock.json', matrix.service)) }}
-      
-      - name: install-dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
+          install-node: startsWith(matrix.service, 'services/node')
+          install-go: startsWith(matrix.service, 'services/go')
+          install-python: startsWith(matrix.service, 'services/python')
+          
+      - name: install-packages
         run: task install
-      
+
       - name: run-tests
         run: task test
-      
-
-  
-
