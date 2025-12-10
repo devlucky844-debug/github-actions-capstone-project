@@ -23,13 +23,16 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
+      
+      - name: ls
+        run: ls
 
       - name: check-cache
         id: cache
         uses: actions/cache/restore@v4
         with:
-          path: ./node_modules # The directory to cache
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          path: ${{ env.NODE_DIR }}/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles(format('{0}/package-lock.json', env.NODE_DIR)) }}
       
       - name: install-dependencies
         if: steps.cache.outputs.cache-hit != 'true'
@@ -39,8 +42,8 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: ./node_modules # The directory to cache
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          path: ${{ env.NODE_DIR }}/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles(format('{0}/package-lock.json', env.NODE_DIR)) }}
       
       - name: run-tests
         run: npm test
