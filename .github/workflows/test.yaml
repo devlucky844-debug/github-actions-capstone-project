@@ -21,17 +21,11 @@ jobs:
       - name: checkout
         uses: actions/checkout@v6.0.1
 
-      - name: setup-node
-        uses: actions/setup-node@v6
+      - name: setup-dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
-          node-version: 24
-      
-      - name: install-task
-        run: |
-          curl -1sLf 'https://dl.cloudsmith.io/public/task/task/setup.deb.sh' | sudo -E bash
-          sudo apt update
-          sudo apt install -y task
-          task --version
+          install-node: true
+          install-task: true
 
       - name: Cache Node modules
         id: cache
