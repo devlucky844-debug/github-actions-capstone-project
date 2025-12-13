@@ -71,6 +71,10 @@ jobs:
             echo "services=${{ steps.filter.outputs.changes }}" >> "$GITHUB_OUTPUT"
 
           fi
+      - name: echo-outputs
+        run: |
+              echo Services="${steps.set-output.outputs.services}"
+              echo Environment="${steps.set-output.outputs.environment}"
   
   build-container-image:
     runs-on: ubuntu-24.04
