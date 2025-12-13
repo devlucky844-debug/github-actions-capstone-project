@@ -5,7 +5,31 @@ on:
     types: [closed]
     paths:
       - services/**
+
+  push:
+    branches:
+      - main
+    paths:
+      - services/**
+    tags:
+      - "**@[0-9]*.[0-9]*.[0-9]*" # service/foo/bar@X.Y.Z
+
   workflow_dispatch:
+    inputs:
+      service:
+        description: "Service to build"
+        type: choice
+        required: true
+        options:
+          - services/go/api-golang
+          - services/node/api-node
+          - services/other/api-golang-migrator
+          - services/python/load-generator-python
+          - services/react/client-react
+      version:
+        description: "Version/tag to use (optional; defaults generating with git describe)"
+        required: false
+        type: string
 
 jobs:
   filter:
@@ -14,7 +38,8 @@ jobs:
       run:
         shell: bash
     outputs:
-      services: ${{ steps.filter.outputs.changes }}
+      services: ${{ steps.set-output.outputs.services }}
+      environment: ${{ steps.set-output.outputs.environment }}
     steps:
       - name: checkout
         uses: actions/checkout@v6.0.1
@@ -25,6 +50,26 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/utils/file-filters.yaml
+          base: main
+      
+      - name: set-output
+        id: set-output
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "environment=development" >> "$GITHUB_OUTPUT"
+            echo "services=[\"${{inputs.service}}\"]" >> "$GITHUB_OUTPUT"
+          
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "environment=production" >> "$GITHUB_OUTPUT"
+            tag="${GITHUB_REF_NAME}"
+            svc="${tag%%@*}"
+            echo "services=[\"${svc}\"]" >> "$GITHUB_OUTPUT"
+          
+          else
+            echo "environment=staging" >> "$GITHUB_OUTPUT"
+            echo "services=${{ steps.filter.outputs.changes }}" >> "$GITHUB_OUTPUT"
+
+          fi
   
   build-container-image:
     runs-on: ubuntu-24.04
@@ -34,6 +79,7 @@ jobs:
       fail-fast: false
       matrix:
         service: ${{ fromJson(needs.filter.outputs.services) }}
+    environment: ${{ needs.filter.outputs.environment }}
     defaults:
       run:
         shell: bash
@@ -43,6 +89,11 @@ jobs:
         uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 0
+
+      - name: set-up-task
+        uses: ./.github/actions/setup-dependencies
+        with:
+          install-task: true
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -56,12 +107,37 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Get version from git
-        run: echo "VERSION=$(git describe --tags --always)" >> $GITHUB_ENV
+      - name: compute-image-tag
+        id: compute-image-tag
+        working-directory: ${{ matrix.service }}
+        env:
+          INPUT_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || ''  }}
+          ENVIRONMENT: ${{ needs.filter.outputs.environment }}
+          SERVICE: ${{ matrix.service }}
+        run: |
+          if [[ -n "$INPUT_VERSION" ]]; then
+            version="$INPUT_VERSION"
+            image_tag=$(task utils:manual-version-tag VERSION="$INPUT_VERSION")
+          
+          elif [[ "$ENVIRONMENT" == "production" ]]; then
+            echo "In elif"
+            echo "Servicee=$SERVICE"
+            version=$(task utils:generate-version -- "$SERVICE")
+            echo "versionn=${version}"
+            image_tag=$(task utils:generate-version-tag -- "$SERVICE") 
+            echo "image_taggg=${image_tag}"
+
+          else
+            echo "In else"
+            version=$(task utils:generate-extended-version -- "$SERVICE")
+            image_tag=$(task utils:generate-extended-version-tag -- "$SERVICE")
+          fi
+
+          echo "image_tag=${image_tag}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.service }}
-          push: true
-          tags: adarsheluri/${{ matrix.service }}:${{ env.VERSION }}
+          push: ${{ !env.ACT }} # Don't push images when running locally
+          tags: ${{ steps.image-tag.outputs.image_tag }}
