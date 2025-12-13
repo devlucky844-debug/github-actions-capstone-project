@@ -140,4 +140,4 @@ jobs:
         with:
           context: ${{ matrix.service }}
           push: ${{ !env.ACT }} # Don't push images when running locally
-          tags: ${{ steps.image-tag.outputs.image_tag }}
+          tags: ${{ steps.compute-image-tag.outputs.image_tag }}
