@@ -68,7 +68,7 @@ jobs:
           
           else
             echo "environment=staging" >> "$GITHUB_OUTPUT"
-            echo "services=${{ steps.filter.outputs.changes }}" >> "$GITHUB_OUTPUT"
+            echo "services=[\"${{ steps.filter.outputs.changes }}\"]" >> "$GITHUB_OUTPUT"
 
           fi
       - name: echo-outputs
