@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - main
+      - test_branch
     paths:
       - services/**
     tags:
