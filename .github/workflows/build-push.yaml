@@ -73,8 +73,8 @@ jobs:
           fi
       - name: echo-outputs
         run: |
-              echo Services="${steps.set-output.outputs.services}"
-              echo Environment="${steps.set-output.outputs.environment}"
+              echo Services="${{ steps.set-output.outputs.services }}"
+              echo Environment="${{ steps.set-output.outputs.environment }}"
   
   build-container-image:
     runs-on: ubuntu-24.04
