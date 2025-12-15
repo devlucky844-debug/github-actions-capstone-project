@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/devlucky844-debug/github-actions-capstone-project/compare/services/python/load-generator-python@0.3.0...services/python/load-generator-python@0.3.1) (2025-12-15)
+
+
+### Bug Fixes
+
+* fixed changed spelling ([828161e](https://github.com/devlucky844-debug/github-actions-capstone-project/commit/828161e53f0e52d8cbd5800bde557c2a475685e0))
+* fixed changed spelling ([4c2df45](https://github.com/devlucky844-debug/github-actions-capstone-project/commit/4c2df458ce92a0d7e41163d7b68bc251cefa7fd8))
+
 ## [0.3.0](https://github.com/devlucky844-debug/github-actions-capstone-project/compare/services/python/load-generator-python@0.2.0...services/python/load-generator-python@0.3.0) (2025-12-15)
 
 
