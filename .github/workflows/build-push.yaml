@@ -68,7 +68,7 @@ jobs:
           
           else
             echo "environment=staging" >> "$GITHUB_OUTPUT"
-            json_services=$(echo '["services/python/load-generator-python"]' | jq -c '[.[] | tostring]')
+            json_services=$(echo '${{ steps.filter.outputs.changes }}' | jq -c '[.[] | tostring]')
             echo "services=$json_services" >> "$GITHUB_OUTPUT"
           fi
       - name: echo-outputs
